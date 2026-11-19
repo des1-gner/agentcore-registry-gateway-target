@@ -236,6 +236,20 @@ def cmd_jwt(a):
     print("  search:", mcp_call(s, "jwt-oauth-outbound", "search_discoverable_registry_records", {"searchQuery": "weather"}))
 
 
+def delete_registry(rc, rid):
+    """A registry can't be deleted while it still has records, so remove those first."""
+    for r in rc.list_registry_records(registryId=rid).get("registryRecords", []):
+        rc.delete_registry_record(registryId=rid, recordId=r["recordId"])
+    wait(lambda: rc.list_registry_records(registryId=rid).get("registryRecords"), lambda recs: not recs)
+    for _ in range(30):
+        try:
+            rc.delete_registry(registryId=rid)
+            return
+        except rc.exceptions.ConflictException:
+            time.sleep(10)  # registry still CREATING/UPDATING or records still deleting
+    print(f"WARNING: could not delete registry {rid}, delete it manually")
+
+
 def cmd_cleanup(a):
     iam, rc, gc, cg = clients(a.region)
     s = load()
@@ -252,12 +266,7 @@ def cmd_cleanup(a):
         gc.delete_oauth2_credential_provider(name=s["oauth_provider"])
     for key in ("iam_registry", "jwt_registry"):
         if s.get(key):
-            for _ in range(30):
-                try:
-                    rc.delete_registry(registryId=s[key])
-                    break
-                except rc.exceptions.ConflictException:
-                    time.sleep(10)
+            delete_registry(rc, s[key])
     if s.get("cognito_pool"):
         if s.get("cognito_domain"):
             cg.delete_user_pool_domain(UserPoolId=s["cognito_pool"], Domain=s["cognito_domain"])
