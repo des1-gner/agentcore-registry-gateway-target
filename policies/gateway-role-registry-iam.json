@@ -1,0 +1,19 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "agent-registry:InvokeRegistryMcp",
+        "agent-registry:SearchDiscoverableRegistryRecords",
+        "agent-registry:ListDiscoverableRegistryRecords"
+      ],
+      "Resource": "arn:aws:agent-registry:<REGION>:<ACCOUNT_ID>:registry/<REGISTRY_ID>"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "agent-registry:GetDiscoverableRegistryRecord",
+      "Resource": "arn:aws:agent-registry:<REGION>:<ACCOUNT_ID>:registry/<REGISTRY_ID>/record/*"
+    }
+  ]
+}
